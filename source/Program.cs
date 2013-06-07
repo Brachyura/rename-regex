@@ -16,6 +16,8 @@ namespace RenameRegex
     /// </summary>
     public static class Program
     {
+        private delegate void FileOrDirectoryMover(string sourceName, string destName);
+
         /// <summary>
         /// Main command line
         /// </summary>
@@ -29,17 +31,33 @@ namespace RenameRegex
             string fileMatch;
             bool recursive;
             bool pretend;
-            if (!GetArguments(args, out fileMatch, out nameSearch, out nameReplace, out pretend, out recursive))
+            bool dirMode;
+
+            if (!GetArguments(args, out fileMatch, out nameSearch, out nameReplace, out pretend, out recursive, out dirMode))
             {
                 Usage();
                 return 1;
             }
 
+            FileOrDirectoryMover mover;
             // enumerate all files
-            string[] files = Directory.GetFiles(
-                System.Environment.CurrentDirectory, 
-                fileMatch, 
-                recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly);
+            string[] files;
+            if (dirMode)
+            {
+                mover = Directory.Move;
+                files = Directory.GetDirectories(
+                    System.Environment.CurrentDirectory,
+                    fileMatch,
+                    recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly);
+            }
+            else
+            {
+                mover = File.Move;
+                files = Directory.GetFiles(
+                    System.Environment.CurrentDirectory,
+                    fileMatch,
+                    recursive ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly);
+            }
 
             if (files.Length == 0)
             {
@@ -56,7 +74,7 @@ namespace RenameRegex
             {
                 // split into file and path
                 string fileName = Path.GetFileName(fullFile);
-                string fileDir  = Path.GetDirectoryName(fullFile);
+                string fileDir = Path.GetDirectoryName(fullFile);
 
                 // rename via a regex
                 string fileNameAfter = Regex.Replace(fileName, nameSearch, nameReplace, RegexOptions.IgnoreCase);
@@ -77,11 +95,11 @@ namespace RenameRegex
                 {
                     try
                     {
-                        File.Move(fileDir + @"\" + fileName, fileDir + @"\" + fileNameAfter);
+                        mover(fileDir + @"\" + fileName, fileDir + @"\" + fileNameAfter);
                     }
                     catch (IOException)
                     {
-                        Console.WriteLine(@"WARNING: Could note move {0} to {1}", fileName, fileNameAfter);
+                        Console.WriteLine(@"WARNING: Could not move {0} to {1}", fileName, fileNameAfter);
                     }
                 }
             }
@@ -105,14 +123,16 @@ namespace RenameRegex
             out string nameSearch,
             out string nameReplace,
             out bool pretend,
-            out bool recursive)
+            out bool recursive,
+            out bool dirMode)
         {
             // defaults
-            fileMatch   = String.Empty;
-            nameSearch  = String.Empty;
+            fileMatch = String.Empty;
+            nameSearch = String.Empty;
             nameReplace = String.Empty;
-            pretend     = false;
-            recursive   = false;
+            pretend = false;
+            recursive = false;
+            dirMode = false;
 
             // check for all arguments
             if (args == null || args.Length < 3)
@@ -126,6 +146,7 @@ namespace RenameRegex
             // Look for options first:
             //  /p: pretend (show what will be renamed)
             //  /r: recursive
+            //  /d: directory mode (rename directories, not files)
             //
             // If not an option, assume it's one of the three main arguments (filename, search, replace)
             //
@@ -138,6 +159,10 @@ namespace RenameRegex
                 else if (args[i].Equals("/r", StringComparison.OrdinalIgnoreCase))
                 {
                     recursive = true;
+                }
+                else if (args[i].Equals("/d", StringComparison.OrdinalIgnoreCase))
+                {
+                    dirMode = true;
                 }
                 else
                 {
@@ -174,9 +199,10 @@ namespace RenameRegex
 
             Console.WriteLine(@"Rename Regex (RR) v{0} by Nic Jansma, http://nicj.net", version);
             Console.WriteLine();
-            Console.WriteLine(@"Usage: RR.exe file-match search replace [/p] [/r]");
+            Console.WriteLine(@"Usage: RR.exe file-match search replace [/p] [/r] [/d]");
             Console.WriteLine(@"        /p: pretend (show what will be renamed)");
             Console.WriteLine(@"        /r: recursive");
+            Console.WriteLine(@"        /d: directory mode (rename directories)");
             return;
         }
     }
