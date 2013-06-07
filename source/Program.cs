@@ -74,7 +74,7 @@ namespace RenameRegex
             {
                 // split into file and path
                 string fileName = Path.GetFileName(fullFile);
-                string fileDir = Path.GetDirectoryName(fullFile);
+                string fileDir  = Path.GetDirectoryName(fullFile);
 
                 // rename via a regex
                 string fileNameAfter = Regex.Replace(fileName, nameSearch, nameReplace, RegexOptions.IgnoreCase);
@@ -127,12 +127,12 @@ namespace RenameRegex
             out bool dirMode)
         {
             // defaults
-            fileMatch = String.Empty;
-            nameSearch = String.Empty;
+            fileMatch   = String.Empty;
+            nameSearch  = String.Empty;
             nameReplace = String.Empty;
-            pretend = false;
-            recursive = false;
-            dirMode = false;
+            pretend     = false;
+            recursive   = false;
+            dirMode     = false;
 
             // check for all arguments
             if (args == null || args.Length < 3)
@@ -184,7 +184,7 @@ namespace RenameRegex
 
             return !String.IsNullOrEmpty(fileMatch)
                 && !String.IsNullOrEmpty(nameSearch)
-                && !String.IsNullOrEmpty(nameReplace);
+                && nameReplace != null;
         }
 
         /// <summary>
@@ -193,9 +193,9 @@ namespace RenameRegex
         private static void Usage()
         {
             // get the assembly version
-            Assembly assembly = Assembly.GetExecutingAssembly();
+            Assembly assembly   = Assembly.GetExecutingAssembly();
             FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(assembly.Location);
-            string version = fvi.ProductVersion;
+            string version      = fvi.ProductVersion;
 
             Console.WriteLine(@"Rename Regex (RR) v{0} by Nic Jansma, http://nicj.net", version);
             Console.WriteLine();
